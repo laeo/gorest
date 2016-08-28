@@ -2,8 +2,9 @@ package gorest
 
 import (
 	"net/http"
+	"regexp"
 )
 
 func Boot() *rest {
-	return &rest{make(map[string]map[string]func(http.ResponseWriter, *http.Request, Context))}
+	return &rest{make(map[string]map[*regexp.Regexp]func(http.ResponseWriter, *http.Request, Context))}
 }

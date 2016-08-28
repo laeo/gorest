@@ -4,9 +4,6 @@ import (
 	"net/http"
 )
 
-type Resource struct {
-}
-
 type Provider interface {
 	Index(http.ResponseWriter, *http.Request, Context)
 	Get(http.ResponseWriter, *http.Request, Context)

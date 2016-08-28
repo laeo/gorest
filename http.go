@@ -8,7 +8,7 @@ import (
 )
 
 type rest struct {
-	routes map[string]map[string]func(http.ResponseWriter, *http.Request, Context)
+	routes map[string]map[*regexp.Regexp]func(http.ResponseWriter, *http.Request, Context)
 }
 
 func (r *rest) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
@@ -22,30 +22,24 @@ func (r *rest) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 
 	c := Context{make(map[string]string)}
 
-	if fne, ok := routes[rq.URL.Path]; ok {
-		fne(rw, rq, c)
-	} else {
-		for p, fn := range routes {
-			p = "^" + p + "$"
-			re := regexp.MustCompile(p)
-			if re.MatchString(rq.URL.Path) {
-				ns := re.SubexpNames()[1:]
-				vs := re.FindStringSubmatch(rq.URL.Path)[1:]
-				if len(ns) != len(vs) {
-					panic(string("URL parameter mismatch"))
-				}
-
-				for i, k := range ns {
-					c.Params[k] = vs[i]
-				}
-
-				fn(rw, rq, c)
-				return
+	for re, fn := range routes {
+		if re.MatchString(rq.URL.Path) {
+			ns := re.SubexpNames()[1:]
+			vs := re.FindStringSubmatch(rq.URL.Path)[1:]
+			if len(ns) != len(vs) {
+				panic(string("URL parameter mismatch"))
 			}
-		}
 
-		http.NotFound(rw, rq)
+			for i, k := range ns {
+				c.Params[k] = vs[i]
+			}
+
+			fn(rw, rq, c)
+			return
+		}
 	}
+
+	http.NotFound(rw, rq)
 }
 
 func (r *rest) Run(s string) {
@@ -60,7 +54,7 @@ func (r *rest) On(m string, p string, fn func(http.ResponseWriter, *http.Request
 	m = strings.ToUpper(m)
 
 	if _, ok := r.routes[m]; ok == false {
-		r.routes[m] = make(map[string]func(http.ResponseWriter, *http.Request, Context))
+		r.routes[m] = make(map[*regexp.Regexp]func(http.ResponseWriter, *http.Request, Context))
 	}
 
 	if strings.Contains(p, "/:") {
@@ -68,7 +62,9 @@ func (r *rest) On(m string, p string, fn func(http.ResponseWriter, *http.Request
 		p = re.ReplaceAllString(p, "/(?P<$1>\\d+)")
 	}
 
-	r.routes[m][p] = fn
+	re := regexp.MustCompile("^" + p + "$")
+
+	r.routes[m][re] = fn
 }
 
 func (r *rest) Get(p string, fn func(http.ResponseWriter, *http.Request, Context)) {
@@ -99,6 +95,14 @@ func (r *rest) Option(p string, fn func(http.ResponseWriter, *http.Request, Cont
 	r.On("OPTION", p, fn)
 }
 
-func (r *rest) Provide(p Provider) {
+func (r *rest) Handle(p string, h Provider) {
+	r.Get(p, h.Index)
+	r.Post(p, h.Post)
 
+	r.Get(p+"/:id", h.Get)
+	r.Put(p+"/:id", h.Put)
+	r.Delete(p+"/:id", h.Delete)
+	r.Head(p+"/:id", h.Head)
+	r.Patch(p+"/:id", h.Patch)
+	r.Option(p+"/:id", h.Option)
 }
