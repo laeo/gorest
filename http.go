@@ -91,8 +91,8 @@ func (r *rest) Patch(p string, fn func(http.ResponseWriter, *http.Request, Conte
 	r.On("PATCH", p, fn)
 }
 
-func (r *rest) Option(p string, fn func(http.ResponseWriter, *http.Request, Context)) {
-	r.On("OPTION", p, fn)
+func (r *rest) Options(p string, fn func(http.ResponseWriter, *http.Request, Context)) {
+	r.On("OPTIONS", p, fn)
 }
 
 func (r *rest) Handle(p string, h Provider) {
@@ -104,5 +104,5 @@ func (r *rest) Handle(p string, h Provider) {
 	r.Delete(p+"/:id", h.Delete)
 	r.Head(p+"/:id", h.Head)
 	r.Patch(p+"/:id", h.Patch)
-	r.Option(p+"/:id", h.Option)
+	r.Options(p+"/:id", h.Options)
 }

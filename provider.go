@@ -12,5 +12,5 @@ type Provider interface {
 	Delete(http.ResponseWriter, *http.Request, Context)
 	Head(http.ResponseWriter, *http.Request, Context)
 	Patch(http.ResponseWriter, *http.Request, Context)
-	Option(http.ResponseWriter, *http.Request, Context)
+	Options(http.ResponseWriter, *http.Request, Context)
 }
